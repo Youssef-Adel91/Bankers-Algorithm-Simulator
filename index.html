@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banker's Algorithm Simulator</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">Banker's <span class="logo-gradient-bg"><span class="logo-gradient-text">Algorithm</span></span></div>
+    <nav>
+      <ul>
+        <li><a href="#home" class="active">Home</a></li>
+        <li><a href="#simulator">Try the Algorithm</a></li>
+        <li><a href="#examples">Examples</a></li>
+        <li><a href="#learn">Learn</a></li>
+        <li><a href="#about">About</a></li>
+      </ul>
+    </nav>
+    <div class="toggle-switch">
+      <span class="icon-sun">&#9728;</span>
+      <input type="checkbox" id="mode-toggle">
+      <label for="mode-toggle"></label>
+      <span class="icon-moon">&#9790;</span>
+    </div>
+  </header>
+  <main>
+    <!-- Home Section -->
+    <section id="home" class="welcome-section">
+      <div class="welcome-content">
+        <span class="badge">Interactive Learning</span>
+        <h1>Visualize and <span class="gradient-text">Learn</span><br>the Banker's <span class="gradient-text">Algorithm</span></h1>
+        <p>Enter your data and simulate the algorithm with our interactive visualization tools. Understand resource allocation and deadlock avoidance in modern operating systems.</p>
+        <div class="cta-buttons">
+          <a href="#simulator" class="btn primary">Try the Simulator <span class="arrow">&#8594;</span></a>
+          <a href="#examples" class="btn secondary">See Examples</a>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-value">100%</span>
+            <span class="stat-label">Deadlock Free</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">5+</span>
+            <span class="stat-label">Example Scenarios</span>
+          </div>
+        </div>
+      </div>
+      <div class="welcome-visual">
+        <div class="code-illustration">
+          <div class="window-bar">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+            <span class="filename">banker_algorithm.php</span>
+          </div>
+          <div class="code-area">
+<pre><code>class BankersAlgorithm {
+    private $processes;
+    private $resources;
+    private $available;
+    private $max;
+    private $allocation;
+    private $need;
+
+    /**
+     * Constructor for BankersAlgorithm class
+     * @param int $processes Number of processes
+     * @param int $resources Number of resource types
+     */
+    public function __construct($processes, $resources) {
+        $this->processes = $processes;
+        $this->resources = $resources;
+        $this->available = array_fill(0, $resources, 0);
+        $this->max = array_fill(0, $processes, array_fill(0, $resources, 0));
+        $this->allocation = array_fill(0, $processes, array_fill(0, $resources, 0));
+        $this->need = array_fill(0, $processes, array_fill(0, $resources, 0));
+    }
+
+    /**
+     * Sets available resources
+     * @param array $available Array of available resources
+     */
+    public function setAvailable($available) {
+        if (count($available) !== $this->resources) {
+            throw new Exception("Invalid number of resources");
+        }
+        $this->available = $available;
+    }
+
+    /**
+     * Sets maximum resources for each process
+     * @param array $max 2D array of maximum resources
+     */
+    public function setMax($max) {
+        if (count($max) !== $this->processes) {
+            throw new Exception("Invalid number of processes");
+        }
+        foreach ($max as $process) {
+            if (count($process) !== $this->resources) {
+                throw new Exception("Invalid number of resources");
+            }
+        }
+        $this->max = $max;
+    }
+
+    /**
+     * Sets allocated resources for each process
+     * @param array $allocation 2D array of allocated resources
+     */
+    public function setAllocation($allocation) {
+        if (count($allocation) !== $this->processes) {
+            throw new Exception("Invalid number of processes");
+        }
+        foreach ($allocation as $process) {
+            if (count($process) !== $this->resources) {
+                throw new Exception("Invalid number of resources");
+            }
+        }
+        $this->allocation = $allocation;
+
+        // Calculate need matrix
+        for ($i = 0; $i < $this->processes; $i++) {
+            for ($j = 0; $j < $this->resources; $j++) {
+                $this->need[$i][$j] = $this->max[$i][$j] - $this->allocation[$i][$j];
+                
+                // Reduce available resources
+                if ($i === 0) { // Only subtract once per resource type
+                    $this->available[$j] -= $allocation[$i][$j];
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks if the system is in safe state
+     * @return array|bool Returns safe sequence if safe, false otherwise
+     */
+    public function isSafe() {
+        $work = $this->available;
+        $finish = array_fill(0, $this->processes, false);
+        $safeSeq = array_fill(0, $this->processes, 0);
+        
+        $count = 0;
+        while ($count < $this->processes) {
+            $found = false;
+            for ($i = 0; $i < $this->processes; $i++) {
+                if (!$finish[$i]) {
+                    $possible = true;
+                    for ($j = 0; $j < $this->resources; $j++) {
+                        if ($this->need[$i][$j] > $work[$j]) {
+                            $possible = false;
+                            break;
+                        }
+                    }
+                    
+                    if ($possible) {
+                        for ($j = 0; $j < $this->resources; $j++) {
+                            $work[$j] += $this->allocation[$i][$j];
+                        }
+                        
+                        $safeSeq[$count] = $i;
+                        $finish[$i] = true;
+                        $count++;
+                        $found = true;
+                    }
+                }
+            }
+            
+            if (!$found) {
+                return false;
+            }
+        }
+        
+        return $safeSeq;
+    }
+
+    /**
+     * Handles resource request from a process
+     * @param int $pid Process ID
+     * @param array $request Resource request array
+     * @return bool True if request can be granted, false otherwise
+     */
+    public function requestResources($pid, $request) {
+        $result = [
+            'status' => false,
+            'message' => '',
+            'safe_sequence' => []
+        ];
+
+        // Check if request exceeds maximum claim
+        for ($i = 0; $i < $this->resources; $i++) {
+            if ($request[$i] > $this->max[$pid][$i]) {
+                $result['message'] = "Error: Request exceeds maximum claim for process P$pid";
+                return $result;
+            }
+        }
+        
+        // Check if resources are available
+        for ($i = 0; $i < $this->resources; $i++) {
+            if ($request[$i] > $this->available[$i]) {
+                $result['message'] = "Resources not available for process P$pid";
+                return $result;
+            }
+        }
+        
+        // Try to allocate resources temporarily
+        $tempAvailable = $this->available;
+        $tempAllocation = $this->allocation;
+        $tempNeed = $this->need;
+        
+        for ($i = 0; $i < $this->resources; $i++) {
+            $tempAvailable[$i] -= $request[$i];
+            $tempAllocation[$pid][$i] += $request[$i];
+            $tempNeed[$pid][$i] -= $request[$i];
+        }
+        
+        // Save current state
+        $saveAvailable = $this->available;
+        $saveAllocation = $this->allocation;
+        $saveNeed = $this->need;
+        
+        // Set temporary state
+        $this->available = $tempAvailable;
+        $this->allocation = $tempAllocation;
+        $this->need = $tempNeed;
+        
+        // Check if the state is safe
+        $safeSeq = $this->isSafe();
+        
+        if ($safeSeq !== false) {
+            // If safe, keep the changes
+            $result['status'] = true;
+            $result['message'] = "Resources allocated to process P$pid successfully";
+            $result['safe_sequence'] = $safeSeq;
+        } else {
+            // If not safe, restore previous state
+            $this->available = $saveAvailable;
+            $this->allocation = $saveAllocation;
+            $this->need = $saveNeed;
+            $result['message'] = "Resource allocation to process P$pid denied (would lead to unsafe state)";
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Gets the current state of the system
+     * @return array System state
+     */
+    public function getState() {
+        return [
+            'processes' => $this->processes,
+            'resources' => $this->resources,
+            'available' => $this->available,
+            'max' => $this->max,
+            'allocation' => $this->allocation,
+            'need' => $this->need
+        ];
+    }
+}
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    
+    $action = $_POST['action'] ?? '';
+    
+    switch($action) {
+        case 'initialize':
+            $processes = intval($_POST['processes'] ?? 0);
+            $resources = intval($_POST['resources'] ?? 0);
+            
+            if ($processes <= 0 || $resources <= 0) {
+                echo json_encode(['status' => 'error', 'message' => 'Invalid number of processes or resources']);
+                exit;
+            }
+            
+            // Create and store the banker's algorithm object in session
+            session_start();
+            $_SESSION['bankers'] = new BankersAlgorithm($processes, $resources);
+            
+            echo json_encode([
+                'status' => 'success', 
+                'message' => "Initialized with $processes processes and $resources resource types"
+            ]);
+            break;
+            
+        case 'set_resources':
+            session_start();
+            if (!isset($_SESSION['bankers'])) {
+                echo json_encode(['status' => 'error', 'message' => 'System not initialized']);
+                exit;
+            }
+            
+            $available = json_decode($_POST['available'] ?? '[]', true);
+            $max = json_decode($_POST['max'] ?? '[]', true);
+            $allocation = json_decode($_POST['allocation'] ?? '[]', true);
+            
+            try {
+                $_SESSION['bankers']->setAvailable($available);
+                $_SESSION['bankers']->setMax($max);
+                $_SESSION['bankers']->setAllocation($allocation);
+                
+                $safeSeq = $_SESSION['bankers']->isSafe();
+                
+                if ($safeSeq !== false) {
+                    echo json_encode([
+                        'status' => 'success',
+                        'message' => 'System is in safe state',
+                        'safe_sequence' => $safeSeq,
+                        'state' => $_SESSION['bankers']->getState()
+                    ]);
+                } else {
+                    echo json_encode([
+                        'status' => 'warning',
+                        'message' => 'System is not in safe state',
+                        'state' => $_SESSION['bankers']->getState()
+                    ]);
+                }
+            } catch (Exception $e) {
+                echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            }
+            break;
+            
+        case 'request_resources':
+            session_start();
+            if (!isset($_SESSION['bankers'])) {
+                echo json_encode(['status' => 'error', 'message' => 'System not initialized']);
+                exit;
+            }
+            
+            $pid = intval($_POST['pid'] ?? -1);
+            $request = json_decode($_POST['request'] ?? '[]', true);
+            
+            $state = $_SESSION['bankers']->getState();
+            if ($pid < 0 || $pid >= $state['processes']) {
+                echo json_encode(['status' => 'error', 'message' => 'Invalid process ID']);
+                exit;
+            }
+            
+            $result = $_SESSION['bankers']->requestResources($pid, $request);
+            
+            if ($result['status']) {
+                echo json_encode([
+                    'status' => 'success',
+                    'message' => $result['message'],
+                    'safe_sequence' => $result['safe_sequence'],
+                    'state' => $_SESSION['bankers']->getState()
+                ]);
+            } else {
+                echo json_encode([
+                    'status' => 'warning',
+                    'message' => $result['message'],
+                    'state' => $_SESSION['bankers']->getState()
+                ]);
+            }
+            break;
+            
+        default:
+            echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
+    }
+    
+    exit;
+}
+
+</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Simulator Section -->
+    <section id="simulator" class="simulator-section">
+      <span class="badge">Interactive</span>
+      <h2>Banker's Algorithm Simulator</h2>
+      <p>Enter your system state data below to check if it's in a safe state</p>
+      <div class="simulator-card">
+        <div class="simulator-tabs">
+          <button class="tab active" data-tab="input">Input Data</button>
+        </div>
+        <div class="tab-content input-tab active">
+          <div class="input-row">
+            <label>Number of Processes:</label>
+            <div class="input-stepper">
+              <button class="stepper-btn" id="dec-proc">-</button>
+              <input type="number" id="num-processes" value="5" min="1" max="10">
+              <button class="stepper-btn" id="inc-proc">+</button>
+            </div>
+            <label>Number of Resource Types:</label>
+            <div class="input-stepper">
+              <button class="stepper-btn" id="dec-res">-</button>
+              <input type="number" id="num-resources" value="3" min="1" max="10">
+              <button class="stepper-btn" id="inc-res">+</button>
+            </div>
+          </div>
+          <button class="btn primary" id="init-matrices">Initialize Matrices <span class="arrow">&#9654;</span></button>
+          <div id="simulator-matrix-area" style="margin-top:2.5rem;"></div>
+          <button class="btn primary" id="check-safety" style="display:none;margin-top:2.5rem;">Check Safety <span class="arrow">&#10003;</span></button>
+          <div id="simulator-results" style="margin-top:2.5rem;"></div>
+        </div>
+      </div>
+    </section>
+    <!-- Examples Section -->
+    <section id="examples" class="examples-section">
+      <span class="badge">EXAMPLES</span>
+      <h2>Pre-configured Scenarios</h2>
+      <p>Load pre-configured examples to understand how the Banker's Algorithm works in different situations.</p>
+      <div class="examples-cards">
+        <div class="example-card safe">
+          <div class="example-top"><span class="example-icon">&#10003;</span></div>
+          <div class="example-divider"></div>
+          <div class="example-content">
+            <h3>Safe State Example</h3>
+            <p>A system state that allows all processes to complete execution.</p>
+            <div class="example-details">
+              <table>
+                <tr><td>Processes:</td><td>5</td></tr>
+                <tr><td>Resources:</td><td>3</td></tr>
+                <tr><td>State:</td><td><span class="state safe">SAFE</span></td></tr>
+              </table>
+            </div>
+            <button class="btn secondary load-example" data-example="safe">Load Example</button>
+          </div>
+        </div>
+        <div class="example-card unsafe">
+          <div class="example-top"><span class="example-icon">&#9888;</span></div>
+          <div class="example-divider"></div>
+          <div class="example-content">
+            <h3>Unsafe State Example</h3>
+            <p>A system state that may lead to deadlock.</p>
+            <div class="example-details">
+              <table>
+                <tr><td>Processes:</td><td>5</td></tr>
+                <tr><td>Resources:</td><td>3</td></tr>
+                <tr><td>State:</td><td><span class="state unsafe">UNSAFE</span></td></tr>
+              </table>
+            </div>
+            <button class="btn secondary load-example" data-example="unsafe">Load Example</button>
+          </div>
+        </div>
+        <div class="example-card intensive">
+          <div class="example-top"><span class="example-icon">&#128202;</span></div>
+          <div class="example-divider"></div>
+          <div class="example-content">
+            <h3>Resource Intensive Example</h3>
+            <p>A complex scenario with high resource demands.</p>
+            <div class="example-details">
+              <table>
+                <tr><td>Processes:</td><td>5</td></tr>
+                <tr><td>Resources:</td><td>3</td></tr>
+                <tr><td>State:</td><td><span class="state complex">COMPLEX</span></td></tr>
+              </table>
+            </div>
+            <button class="btn secondary load-example" data-example="intensive">Load Example</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Learn Section -->
+    <section id="learn" class="learn-section">
+      <span class="badge">Knowledge</span>
+      <h2>Learn the Banker's Algorithm</h2>
+      <div class="learn-content">
+        <div class="learn-info">
+          <div class="info-block">
+            <h4>What is the Banker's Algorithm?</h4>
+            <p>The Banker's Algorithm is a deadlock avoidance algorithm used in operating systems. It was developed by Edsger Dijkstra and is named the "Banker's algorithm" because it models how a bank would never allocate its available cash in a way that would prevent it from fulfilling all customer needs.</p>
+          </div>
+          <div class="info-block">
+            <h4>How does it work?</h4>
+            <p>The algorithm maintains information about resource allocation to each process, the maximum demand of each process, and the available resources. It uses this information to determine if granting a resource request would put the system in an unsafe state.</p>
+          </div>
+          <div class="info-block key-components">
+            <h4>Key Components:</h4>
+            <div class="key-list">
+              <div class="key-row">
+                <span class="key-icon available">&#128230;</span>
+                <div>
+                  <div class="key-label">Available Resources:</div>
+                  <div class="key-desc">The number of available instances of each resource type.</div>
+                </div>
+              </div>
+              <div class="key-row">
+                <span class="key-icon max">&#128202;</span>
+                <div>
+                  <div class="key-label">Maximum Need:</div>
+                  <div class="key-desc">The maximum demand of each process for each resource type.</div>
+                </div>
+              </div>
+              <div class="key-row">
+                <span class="key-icon alloc">&#128295;</span>
+                <div>
+                  <div class="key-label">Allocation:</div>
+                  <div class="key-desc">The number of resources of each type allocated to each process.</div>
+                </div>
+              </div>
+              <div class="key-row">
+                <span class="key-icon need">&#10067;</span>
+                <div>
+                  <div class="key-label">Need:</div>
+                  <div class="key-desc">The remaining resources needed by each process (Max - Allocation).</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="info-block">
+            <h4>Algorithm Steps:</h4>
+            <ol>
+              <li><span class="step-num">1</span>Calculate the Need matrix by subtracting the Allocation matrix from the Maximum matrix.</li>
+              <li><span class="step-num">2</span>Look for a process whose needs can be satisfied with the available resources.</li>
+              <li><span class="step-num">3</span>If found, temporarily add its allocated resources to the available resources.</li>
+              <li><span class="step-num">4</span>Repeat steps 2-3 until all processes are allocated or no process can be allocated.</li>
+              <li><span class="step-num">5</span>If all processes can complete, the system is in a safe state.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="learn-flowchart">
+          <h4>Banker's Algorithm Flowchart</h4>
+          <img src="C:\Users\DELL\Desktop\OSSSS\flowchart.png" alt="Banker's Algorithm Flowchart">
+        </div>
+      </div>
+    </section>
+    <!-- About Section -->
+    <section id="about" class="about-section">
+      <span class="badge">ABOUT</span>
+      <h2>About This Project</h2>
+      <p>This Banker's Algorithm Simulator was created as an educational tool to help computer science students understand and visualize the algorithm's operation. The tool allows users to experiment with different resource allocation scenarios and observe the algorithm's behavior in real time.</p>
+      <div class="about-cards">
+        <div class="about-card">
+          <span class="about-icon">&#128300;</span>
+          <h4>Interactive Learning</h4>
+          <p>Hands-on experimentation with algorithm parameters.</p>
+        </div>
+        <div class="about-card">
+          <span class="about-icon">&#128200;</span>
+          <h4>Visual Representation</h4>
+          <p>Clear matrices and step-by-step visualization.</p>
+        </div>
+        <div class="about-card">
+          <span class="about-icon">&#128218;</span>
+          <h4>Educational Resource</h4>
+          <p>Comprehensive explanation of the algorithm's concepts.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <div class="footer-content">
+      <div class="footer-logo">
+        Banker's
+        <span class="logo-gradient-bg">
+          <span class="logo-gradient-text">Algorithm</span>
+        </span>
+      </div>
+      <div class="footer-links">
+        <div class="quick-links">
+          <h5>Quick Links</h5>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#simulator">Simulator</a></li>
+            <li><a href="#examples">Examples</a></li>
+            <li><a href="#learn">Learn</a></li>
+            <li><a href="#about">About</a></li>
+          </ul>
+        </div>
+        <div class="resources">
+          <h5>Resources</h5>
+          <ul>
+            <li><a href="https://en.wikipedia.org/wiki/Banker%27s_algorithm" target="_blank">Operating Systems Concepts</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2025 Banker's Algorithm Simulator. All rights reserved.</div>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html> 
